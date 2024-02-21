@@ -50,8 +50,8 @@ pub fn start_clash(body: StartBody) -> Result<()> {
     let config_file = body.config_file.as_str();
 
     let args = match core_type.as_str() {
-        "clash-meta" => vec!["-m", "-d", config_dir, "-f", config_file],
-        "clash-meta-alpha" => vec!["-m", "-d", config_dir, "-f", config_file],
+        "clash-meta" => vec!["-d", config_dir, "-f", config_file],
+        "clash-meta-alpha" => vec!["-d", config_dir, "-f", config_file],
         _ => vec!["-d", config_dir, "-f", config_file],
     };
 
