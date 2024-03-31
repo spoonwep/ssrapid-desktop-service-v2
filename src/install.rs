@@ -1,6 +1,81 @@
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "linux")))]
 fn main() {
-    panic!("This program is only intended to run on Windows.");
+    panic!("This program is not intended to run on this platform.");
+}
+
+use anyhow::Error;
+#[cfg(target_os = "linux")]
+fn main() -> Result<(), Error> {
+    const SERVICE_NAME: &str = "clash-verge-service";
+    use std::fs::File;
+    use std::io::Write;
+    use std::path::Path;
+
+    let service_binary_path = std::env::current_exe()
+        .unwrap()
+        .with_file_name("clash-verge-service");
+    if !service_binary_path.exists() {
+        eprintln!("The clash-verge-service binary not found.");
+        std::process::exit(2);
+    }
+
+    // Peek the status of the service.
+    let status_code = std::process::Command::new("systemctl")
+        .arg("status")
+        .arg(format!("{}.service", SERVICE_NAME))
+        .arg("--no-pager")
+        .output()
+        .expect("Failed to execute 'systemctl status' command.")
+        .status
+        .code();
+
+    /*
+     * https://www.freedesktop.org/software/systemd/man/latest/systemctl.html#Exit%20status
+     */
+    match status_code {
+        Some(code) => match code {
+            0 => return Ok(()),
+            1|2|3 => {
+                std::process::Command::new("systemctl")
+                    .arg("start")
+                    .arg(format!("{}.service", SERVICE_NAME))
+                    .output().expect("Failed to execute 'systemctl start' command.");
+                return Ok(());
+            },
+            4 => {},
+            _ => {
+                panic!("Unexpected status code from systemctl status")
+            }
+        },
+        None => {
+            panic!("systemctl was improperly terminated.");
+        }
+    }
+
+    let unit_file = format!("/etc/systemd/system/{}.service", SERVICE_NAME);
+    let unit_file = Path::new(&unit_file);
+
+    let unit_file_content = format!(
+        include_str!("systemd_service_unit.tmpl"),
+        service_binary_path.to_str().unwrap()
+    );
+    let mut file = File::create(unit_file).expect("Failed to create file for writing.");
+    file.write_all(unit_file_content.as_bytes())
+        .expect("Unable to write unit file");
+
+    // Reload unit files and start service.
+    std::process::Command::new("systemctl")
+        .arg("daemon-reload")
+        .output()
+        .and_then(|_| {
+            std::process::Command::new("systemctl")
+                .arg("enable")
+                .arg(SERVICE_NAME)
+                .arg("--now")
+                .output()
+        })
+        .expect("Failed to start service.");
+    Ok(())
 }
 
 /// install and start the service

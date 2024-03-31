@@ -74,3 +74,5 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
             target/${{ matrix.target }}/release/clash-verge-service
+            target/${{ matrix.target }}/release/install-service
+            target/${{ matrix.target }}/release/uninstall-service
