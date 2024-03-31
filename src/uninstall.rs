@@ -1,9 +1,36 @@
-#[cfg(not(any(windows, target_os = "linux")))]
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
 fn main() {
     panic!("This program is not intended to run on this platform.");
 }
-
+#[cfg(not(windows))]
 use anyhow::Error;
+
+#[cfg(target_os = "macos")]
+fn main() -> Result<(), Error> {
+    use std::{fs::remove_file, path::Path};
+
+    let plist_file = "/Library/LaunchDaemons/io.github.clashverge.helper.plist";
+
+    // Unload the service.
+    std::process::Command::new("launchctl")
+        .arg("unload")
+        .arg(plist_file)
+        .output()
+        .expect("Failed to unload service.");
+
+    // Remove the service file.
+    let service_file = Path::new("/Library/PrivilegedHelperTools/io.github.clashverge.helper");
+    if service_file.exists() {
+        remove_file(service_file).expect("Failed to remove service file.");
+    }
+
+    // Remove the plist file.
+    let plist_file = Path::new(plist_file);
+    if plist_file.exists() {
+        remove_file(plist_file).expect("Failed to remove plist file.");
+    }
+    Ok(())
+}
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Error> {
     use std::{fs::remove_file, path::Path};

@@ -1,9 +1,65 @@
-#[cfg(not(any(windows, target_os = "linux")))]
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
 fn main() {
     panic!("This program is not intended to run on this platform.");
 }
 
+#[cfg(not(windows))]
 use anyhow::Error;
+#[cfg(target_os = "macos")]
+fn main() -> Result<(), Error> {
+    use std::fs::File;
+    use std::io::Write;
+    use std::path::Path;
+
+    let service_binary_path = std::env::current_exe()
+        .unwrap()
+        .with_file_name("clash-verge-service");
+    if !service_binary_path.exists() {
+        eprintln!("The clash-verge-service binary not found.");
+        std::process::exit(2);
+    }
+
+    std::fs::copy(
+        service_binary_path,
+        "/Library/PrivilegedHelperTools/io.github.clashverge.helper",
+    )
+    .expect("Unable to copy service file");
+
+    let plist_file = "/Library/LaunchDaemons/io.github.clashverge.helper.plist";
+    let plist_file = Path::new(plist_file);
+
+    let plist_file_content = include_str!("io.github.clashverge.helper.plist");
+    let mut file = File::create(plist_file).expect("Failed to create file for writing.");
+    file.write_all(plist_file_content.as_bytes())
+        .expect("Unable to write plist file");
+    std::process::Command::new("chmod")
+        .arg("755")
+        .arg(plist_file)
+        .output()
+        .expect("Failed to chmod");
+    std::process::Command::new("chown")
+        .arg("root:wheel")
+        .arg(plist_file)
+        .output()
+        .expect("Failed to chown");
+    std::process::Command::new("chmod")
+        .arg("755")
+        .arg("/Library/PrivilegedHelperTools/io.github.clashverge.helper")
+        .output()
+        .expect("Failed to chmod");
+    std::process::Command::new("chown")
+        .arg("root:wheel")
+        .arg("/Library/PrivilegedHelperTools/io.github.clashverge.helper)")
+        .output()
+        .expect("Failed to chown");
+    // Load the service.
+    std::process::Command::new("launchctl")
+        .arg("load")
+        .arg(plist_file)
+        .output()
+        .expect("Failed to load service.");
+    Ok(())
+}
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Error> {
     const SERVICE_NAME: &str = "clash-verge-service";
@@ -35,14 +91,15 @@ fn main() -> Result<(), Error> {
     match status_code {
         Some(code) => match code {
             0 => return Ok(()),
-            1|2|3 => {
+            1 | 2 | 3 => {
                 std::process::Command::new("systemctl")
                     .arg("start")
                     .arg(format!("{}.service", SERVICE_NAME))
-                    .output().expect("Failed to execute 'systemctl start' command.");
+                    .output()
+                    .expect("Failed to execute 'systemctl start' command.");
                 return Ok(());
-            },
-            4 => {},
+            }
+            4 => {}
             _ => {
                 panic!("Unexpected status code from systemctl status")
             }

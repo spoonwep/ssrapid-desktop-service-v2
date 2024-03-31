@@ -5,9 +5,9 @@
 <dict>
 <key>Label</key>
 <string>io.github.clashverge.helper</string>
-<key>MachServices</key>
-<dict>
-<key>io.github.clashverge.helper</key>
+<key>RunAtLoad</key>
+<true/>
+<key>KeepAlive</key>
 <true/>
 </dict>
 <key>Program</key>
