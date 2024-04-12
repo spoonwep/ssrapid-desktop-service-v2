@@ -14,16 +14,13 @@ fn main() -> Result<(), Error> {
     let service_binary_path = std::env::current_exe()
         .unwrap()
         .with_file_name("clash-verge-service");
+    let target_binary_path = "/Library/PrivilegedHelperTools/io.github.clashverge.helper";
     if !service_binary_path.exists() {
         eprintln!("The clash-verge-service binary not found.");
         std::process::exit(2);
     }
 
-    std::fs::copy(
-        service_binary_path,
-        "/Library/PrivilegedHelperTools/io.github.clashverge.helper",
-    )
-    .expect("Unable to copy service file");
+    std::fs::copy(service_binary_path, target_binary_path).expect("Unable to copy service file");
 
     let plist_file = "/Library/LaunchDaemons/io.github.clashverge.helper.plist";
     let plist_file = Path::new(plist_file);
@@ -44,17 +41,29 @@ fn main() -> Result<(), Error> {
         .expect("Failed to chown");
     std::process::Command::new("chmod")
         .arg("755")
-        .arg("/Library/PrivilegedHelperTools/io.github.clashverge.helper")
+        .arg(target_binary_path)
         .output()
         .expect("Failed to chmod");
     std::process::Command::new("chown")
         .arg("root:wheel")
-        .arg("/Library/PrivilegedHelperTools/io.github.clashverge.helper)")
+        .arg(target_binary_path)
         .output()
         .expect("Failed to chown");
+    // Unload before load the service.
+    std::process::Command::new("launchctl")
+        .arg("unload")
+        .arg(plist_file)
+        .output()
+        .expect("Failed to unload service.");
     // Load the service.
     std::process::Command::new("launchctl")
         .arg("load")
+        .arg(plist_file)
+        .output()
+        .expect("Failed to load service.");
+    // Load the service.
+    std::process::Command::new("launchctl")
+        .arg("start")
         .arg(plist_file)
         .output()
         .expect("Failed to load service.");
