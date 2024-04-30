@@ -30,7 +30,7 @@ fn main() -> Result<(), Error> {
     file.write_all(plist_file_content.as_bytes())
         .expect("Unable to write plist file");
     std::process::Command::new("chmod")
-        .arg("755")
+        .arg("644")
         .arg(plist_file)
         .output()
         .expect("Failed to chmod");
@@ -40,7 +40,7 @@ fn main() -> Result<(), Error> {
         .output()
         .expect("Failed to chown");
     std::process::Command::new("chmod")
-        .arg("755")
+        .arg("544")
         .arg(target_binary_path)
         .output()
         .expect("Failed to chmod");
@@ -61,10 +61,10 @@ fn main() -> Result<(), Error> {
         .arg(plist_file)
         .output()
         .expect("Failed to load service.");
-    // Load the service.
+    // Start the service.
     std::process::Command::new("launchctl")
         .arg("start")
-        .arg(plist_file)
+        .arg("io.github.clashverge.helper")
         .output()
         .expect("Failed to load service.");
     Ok(())
