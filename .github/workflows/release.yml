@@ -51,9 +51,16 @@ jobs:
         with:
           target: ${{ matrix.target }}
 
+      - name: Update Tag
+        uses: richardsimko/update-tag@v1
+        with:
+          tag_name: ${{ matrix.target }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Release
         if: matrix.os == 'windows-latest'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: ${{ matrix.target }}
           tag_name: ${{ matrix.target }}
@@ -65,7 +72,7 @@ jobs:
 
       - name: Release
         if: matrix.os != 'windows-latest'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: ${{ matrix.target }}
           tag_name: ${{ matrix.target }}
