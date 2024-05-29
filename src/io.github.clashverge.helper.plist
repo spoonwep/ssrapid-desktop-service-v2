@@ -9,6 +9,8 @@
             <key>io.github.clashverge.helper</key>
             <true />
         </dict>
+        <key>RunAtLoad</key>
+        <true />
         <key>Program</key>
         <string>/Library/PrivilegedHelperTools/io.github.clashverge.helper</string>
         <key>ProgramArguments</key>
