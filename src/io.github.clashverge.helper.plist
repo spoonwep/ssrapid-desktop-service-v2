@@ -11,6 +11,8 @@
         </dict>
         <key>RunAtLoad</key>
         <true />
+        <key>KeepAlive</key>
+        <true/>
         <key>Program</key>
         <string>/Library/PrivilegedHelperTools/io.github.clashverge.helper</string>
         <key>ProgramArguments</key>
