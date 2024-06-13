@@ -15,9 +15,14 @@ fn main() -> Result<(), Error> {
         .unwrap()
         .with_file_name("clash-verge-service");
     let target_binary_path = "/Library/PrivilegedHelperTools/io.github.clashverge.helper";
+    let target_binary_dir = Path::new("/Library/PrivilegedHelperTools");
     if !service_binary_path.exists() {
         eprintln!("The clash-verge-service binary not found.");
         std::process::exit(2);
+    }
+    if !target_binary_dir.exists() {
+        std::fs::create_dir("/Library/PrivilegedHelperTools")
+            .expect("Unable to create directory for service file");
     }
 
     std::fs::copy(service_binary_path, target_binary_path).expect("Unable to copy service file");
