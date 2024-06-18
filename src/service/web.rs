@@ -4,14 +4,11 @@ use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::fs::File;
-use std::process::Child;
 use std::process::Command;
 use std::sync::Arc;
-
+use sysinfo::System;
 #[derive(Debug, Default)]
 pub struct ClashStatus {
-    pub child: Option<Child>,
-
     pub info: Option<StartBody>,
 }
 
@@ -56,10 +53,9 @@ pub fn start_clash(body: StartBody) -> Result<()> {
     };
 
     let log = File::create(body.log_file).context("failed to open log")?;
-    let cmd = Command::new(body.bin_path).args(args).stdout(log).spawn()?;
+    Command::new(body.bin_path).args(args).stdout(log).spawn()?;
 
     let mut arc = ClashStatus::global().lock();
-    arc.child = Some(cmd);
     arc.info = Some(body_cloned);
 
     Ok(())
@@ -72,10 +68,13 @@ pub fn stop_clash() -> Result<()> {
 
     arc.info = None;
 
-    match arc.child.take() {
-        Some(mut child) => child.kill().context("failed to kill clash"),
-        None => bail!("clash not executed"),
+    let mut system = System::new();
+    system.refresh_all();
+    let procs = system.processes_by_name("clash-meta");
+    for proc in procs {
+        proc.kill();
     }
+    Ok(())
 }
 
 /// GET /get_clash
