@@ -67,7 +67,10 @@ pub fn stop_clash() -> Result<()> {
     system.refresh_all();
     let procs = system.processes_by_name("verge-mihomo");
     for proc in procs {
+        #[cfg(target_os = "windows")]
         proc.kill();
+        #[cfg(not(target_os = "windows"))]
+        proc.kill_with(sysinfo::Signal::Interrupt);
     }
     Ok(())
 }
