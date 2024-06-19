@@ -40,17 +40,12 @@ pub fn start_clash(body: StartBody) -> Result<()> {
     let _ = stop_clash();
 
     let body_cloned = body.clone();
-    let core_type = body.core_type.unwrap_or("clash".into());
 
     let config_dir = body.config_dir.as_str();
 
     let config_file = body.config_file.as_str();
 
-    let args = match core_type.as_str() {
-        "clash-meta" => vec!["-d", config_dir, "-f", config_file],
-        "clash-meta-alpha" => vec!["-d", config_dir, "-f", config_file],
-        _ => vec!["-d", config_dir, "-f", config_file],
-    };
+    let args = vec!["-d", config_dir, "-f", config_file];
 
     let log = File::create(body.log_file).context("failed to open log")?;
     Command::new(body.bin_path).args(args).stdout(log).spawn()?;
@@ -70,7 +65,7 @@ pub fn stop_clash() -> Result<()> {
 
     let mut system = System::new();
     system.refresh_all();
-    let procs = system.processes_by_name("clash-meta");
+    let procs = system.processes_by_name("verge-mihomo");
     for proc in procs {
         proc.kill();
     }
