@@ -87,12 +87,22 @@ pub async fn run_service() -> anyhow::Result<()> {
         .and(warp::path("stop_service"))
         .map(|| wrap_response!(stop_service()));
 
+    let api_set_dns = warp::post()
+        .and(warp::path("set_dns"))
+        .map(|| wrap_response!(set_dns()));
+
+    let api_unset_dns = warp::post()
+        .and(warp::path("unset_dns"))
+        .map(|| wrap_response!(unset_dns()));
+
     warp::serve(
         api_get_version
             .or(api_start_clash)
             .or(api_stop_clash)
             .or(api_stop_service)
-            .or(api_get_clash),
+            .or(api_get_clash)
+            .or(api_set_dns)
+            .or(api_unset_dns),
     )
     .run(([127, 0, 0, 1], LISTEN_PORT))
     .await;

@@ -30,7 +30,7 @@ fn main() -> Result<(), Error> {
     let plist_file = "/Library/LaunchDaemons/io.github.clashverge.helper.plist";
     let plist_file = Path::new(plist_file);
 
-    let plist_file_content = include_str!("io.github.clashverge.helper.plist");
+    let plist_file_content = include_str!("files/io.github.clashverge.helper.plist");
     let mut file = File::create(plist_file).expect("Failed to create file for writing.");
     file.write_all(plist_file_content.as_bytes())
         .expect("Unable to write plist file");
@@ -127,7 +127,7 @@ fn main() -> Result<(), Error> {
     let unit_file = Path::new(&unit_file);
 
     let unit_file_content = format!(
-        include_str!("systemd_service_unit.tmpl"),
+        include_str!("files/systemd_service_unit.tmpl"),
         service_binary_path.to_str().unwrap()
     );
     let mut file = File::create(unit_file).expect("Failed to create file for writing.");
