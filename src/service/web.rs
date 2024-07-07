@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::process::Command;
 use std::sync::Arc;
-use sysinfo::System;
+use sysinfo::{ProcessRefreshKind, RefreshKind, System};
 #[derive(Debug, Default)]
 pub struct ClashStatus {
     pub info: Option<StartBody>,
@@ -77,8 +77,7 @@ pub fn stop_clash() -> Result<()> {
 
     arc.info = None;
 
-    let mut system = System::new();
-    system.refresh_all();
+    let system = System::new_with_specifics(RefreshKind::new().with_processes(ProcessRefreshKind::everything()));
     let procs = system.processes_by_name("verge-mihomo");
     for proc in procs {
         proc.kill();
