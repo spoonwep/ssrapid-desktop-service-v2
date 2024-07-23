@@ -114,6 +114,7 @@ pub fn set_dns() -> Result<()> {
         if origin_dns.trim().len() > 15 {
             origin_dns = "Empty".to_string();
         }
+        println!("origin_dns: {}", origin_dns);
         let mut arc = DNSStatus::global().lock();
         arc.dns = Some(origin_dns);
 
@@ -138,6 +139,7 @@ pub fn unset_dns() -> Result<()> {
             Some(dns) => dns,
             None => "".to_string(),
         };
+        println!("origin_dns: {}", origin_dns);
         if !origin_dns.is_empty() {
             let service = default_network_service().or_else(|e| default_network_service_by_ns());
             if let Err(e) = service {
