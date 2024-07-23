@@ -77,7 +77,9 @@ pub fn stop_clash() -> Result<()> {
 
     arc.info = None;
 
-    let system = System::new_with_specifics(RefreshKind::new().with_processes(ProcessRefreshKind::everything()));
+    let system = System::new_with_specifics(
+        RefreshKind::new().with_processes(ProcessRefreshKind::everything()),
+    );
     let procs = system.processes_by_name("verge-mihomo");
     for proc in procs {
         proc.kill();
@@ -110,8 +112,11 @@ pub fn set_dns() -> Result<()> {
             .arg("-getdnsservers")
             .arg(&service)
             .output()?;
-        let mut origin_dns = String::from_utf8(output.stdout)?;
-        if origin_dns.trim().len() > 15 {
+        let mut origin_dns = String::from_utf8(output.stdout)?.trim().replace("\n", " ");
+        if origin_dns
+            .trim()
+            .starts_with("There aren't any DNS Servers set on")
+        {
             origin_dns = "Empty".to_string();
         }
         println!("origin_dns: {}", origin_dns);
