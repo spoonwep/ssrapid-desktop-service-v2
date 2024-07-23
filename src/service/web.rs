@@ -103,7 +103,7 @@ pub fn get_clash() -> Result<StartBody> {
 pub fn set_dns() -> Result<()> {
     #[cfg(target_os = "macos")]
     {
-        let service = default_network_service().or_else(|e| default_network_service_by_ns());
+        let service = default_network_service().or_else(|_e| default_network_service_by_ns());
         if let Err(e) = service {
             return Err(e);
         }
@@ -119,7 +119,6 @@ pub fn set_dns() -> Result<()> {
         {
             origin_dns = "Empty".to_string();
         }
-        println!("origin_dns: {}", origin_dns);
         let mut arc = DNSStatus::global().lock();
         arc.dns = Some(origin_dns);
 
@@ -144,9 +143,8 @@ pub fn unset_dns() -> Result<()> {
             Some(dns) => dns,
             None => "".to_string(),
         };
-        println!("origin_dns: {}", origin_dns);
         if !origin_dns.is_empty() {
-            let service = default_network_service().or_else(|e| default_network_service_by_ns());
+            let service = default_network_service().or_else(|_e| default_network_service_by_ns());
             if let Err(e) = service {
                 return Err(e);
             }
