@@ -7,7 +7,7 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::process::Command;
 use std::sync::Arc;
-use sysinfo::{ProcessRefreshKind, RefreshKind, System};
+use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System};
 #[derive(Debug, Default)]
 pub struct ClashStatus {
     pub info: Option<StartBody>,
@@ -78,9 +78,10 @@ pub fn stop_clash() -> Result<()> {
 
     arc.info = None;
 
-    let system = System::new_with_specifics(
+    let mut system = System::new_with_specifics(
         RefreshKind::new().with_processes(ProcessRefreshKind::everything()),
     );
+    system.refresh_processes(ProcessesToUpdate::All);
     let procs = system.processes_by_name(OsStr::new("verge-mihomo"));
     for proc in procs {
         proc.kill();
