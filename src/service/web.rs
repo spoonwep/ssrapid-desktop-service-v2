@@ -3,6 +3,7 @@ use anyhow::{bail, Context, Result};
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::fs::File;
 use std::process::Command;
 use std::sync::Arc;
@@ -80,7 +81,7 @@ pub fn stop_clash() -> Result<()> {
     let system = System::new_with_specifics(
         RefreshKind::new().with_processes(ProcessRefreshKind::everything()),
     );
-    let procs = system.processes_by_name("verge-mihomo");
+    let procs = system.processes_by_name(OsStr::new("verge-mihomo"));
     for proc in procs {
         proc.kill();
     }
