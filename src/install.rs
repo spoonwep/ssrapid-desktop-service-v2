@@ -27,6 +27,10 @@ fn main() -> Result<(), Error> {
 
     std::fs::copy(service_binary_path, target_binary_path).expect("Unable to copy service file");
 
+    let plist_dir = Path::new("/Library/LaunchDaemons");
+    if !plist_dir.exists() {
+        std::fs::create_dir(plist_dir).expect("Unable to create directory for plist file");
+    }
     let plist_file = "/Library/LaunchDaemons/io.github.clashverge.helper.plist";
     let plist_file = Path::new(plist_file);
 
@@ -56,13 +60,15 @@ fn main() -> Result<(), Error> {
         .expect("Failed to chown");
     // Unload before load the service.
     std::process::Command::new("launchctl")
-        .arg("unload")
+        .arg("bootout")
+        .arg("system")
         .arg(plist_file)
         .output()
         .expect("Failed to unload service.");
     // Load the service.
     std::process::Command::new("launchctl")
-        .arg("load")
+        .arg("bootstrap")
+        .arg("system")
         .arg(plist_file)
         .output()
         .expect("Failed to load service.");

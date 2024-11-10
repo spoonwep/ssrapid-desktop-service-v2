@@ -13,7 +13,8 @@ fn main() -> Result<(), Error> {
 
     // Unload the service.
     std::process::Command::new("launchctl")
-        .arg("unload")
+        .arg("bootout")
+        .arg("system")
         .arg(plist_file)
         .output()
         .expect("Failed to unload service.");
