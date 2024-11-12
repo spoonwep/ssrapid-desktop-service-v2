@@ -26,15 +26,6 @@ impl ClashStatus {
     }
 }
 
-#[allow(dead_code)]
-impl DNSStatus {
-    pub fn global() -> &'static Arc<Mutex<DNSStatus>> {
-        static DNSSTAUS: OnceCell<Arc<Mutex<DNSStatus>>> = OnceCell::new();
-
-        DNSSTAUS.get_or_init(|| Arc::new(Mutex::new(DNSStatus::default())))
-    }
-}
-
 /// GET /version
 /// 获取服务进程的版本
 pub fn get_version() -> Result<HashMap<String, String>> {
