@@ -2,61 +2,76 @@
 fn main() {
     panic!("This program is not intended to run on this platform.");
 }
+
 #[cfg(not(windows))]
 use anyhow::Error;
 
+// Helper function for command execution
+
 #[cfg(target_os = "macos")]
 fn main() -> Result<(), Error> {
-    use std::{fs::remove_file, path::Path};
+    use clash_verge_service::utils::run_command;
+    use std::env;
+    use std::path::Path;
 
+    let target_binary_path = "/Library/PrivilegedHelperTools/io.github.clashverge.helper";
     let plist_file = "/Library/LaunchDaemons/io.github.clashverge.helper.plist";
 
-    // Unload the service.
-    std::process::Command::new("launchctl")
-        .arg("bootout")
-        .arg("system")
-        .arg(plist_file)
-        .output()
-        .expect("Failed to unload service.");
+    let debug = env::args().any(|arg| arg == "--debug");
 
-    // Remove the service file.
-    let service_file = Path::new("/Library/PrivilegedHelperTools/io.github.clashverge.helper");
-    if service_file.exists() {
-        remove_file(service_file).expect("Failed to remove service file.");
+    // Stop and unload service
+    let _ = run_command("launchctl", &["stop", "io.github.clashverge.helper"], debug);
+    let _ = run_command("launchctl", &["bootout", "system", plist_file], debug);
+    let _ = run_command(
+        "launchctl",
+        &["disable", "system/io.github.clashverge.helper"],
+        debug,
+    )?;
+
+    // Remove files
+    if Path::new(plist_file).exists() {
+        std::fs::remove_file(plist_file)
+            .map_err(|e| anyhow::anyhow!("Failed to remove plist file: {}", e))?;
     }
 
-    // Remove the plist file.
-    let plist_file = Path::new(plist_file);
-    if plist_file.exists() {
-        remove_file(plist_file).expect("Failed to remove plist file.");
+    if Path::new(target_binary_path).exists() {
+        std::fs::remove_file(target_binary_path)
+            .map_err(|e| anyhow::anyhow!("Failed to remove service binary: {}", e))?;
     }
+
     Ok(())
 }
+
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Error> {
-    use std::{fs::remove_file, path::Path};
-
+    use clash_verge_service::utils::run_command;
     const SERVICE_NAME: &str = "clash-verge-service";
+    use std::env;
 
-    // Disable the service
-    std::process::Command::new("systemctl")
-        .arg("disable")
-        .arg(SERVICE_NAME)
-        .arg("--now")
-        .output()
-        .expect("Failed to disable service.");
+    let debug = env::args().any(|arg| arg == "--debug");
 
-    // Remove the unit file.
+    // Stop and disable service
+    run_command(
+        "systemctl",
+        &["stop", &format!("{}.service", SERVICE_NAME)],
+        debug,
+    );
+    run_command(
+        "systemctl",
+        &["disable", &format!("{}.service", SERVICE_NAME)],
+        debug,
+    );
+
+    // Remove service file
     let unit_file = format!("/etc/systemd/system/{}.service", SERVICE_NAME);
-    let unit_file = Path::new(&unit_file);
-    if unit_file.exists() {
-        remove_file(unit_file).expect("Failed to remove unit file.");
+    if std::path::Path::new(&unit_file).exists() {
+        std::fs::remove_file(&unit_file)
+            .map_err(|e| anyhow::anyhow!("Failed to remove service file: {}", e))?;
     }
 
-    std::process::Command::new("systemctl")
-        .arg("daemon-reload")
-        .output()
-        .expect("Failed to reload systemd daemon.");
+    // Reload systemd
+    run_command("systemctl", &["daemon-reload"], debug);
+
     Ok(())
 }
 

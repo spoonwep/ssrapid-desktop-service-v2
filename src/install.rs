@@ -1,3 +1,5 @@
+use std::env;
+
 #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
 fn main() {
     panic!("This program is not intended to run on this platform.");
@@ -7,128 +9,117 @@ fn main() {
 use anyhow::Error;
 #[cfg(target_os = "macos")]
 fn main() -> Result<(), Error> {
+    use clash_verge_service::utils::run_command;
     use std::fs::File;
     use std::io::Write;
     use std::path::Path;
+
+    let debug = env::args().any(|arg| arg == "--debug");
 
     let service_binary_path = std::env::current_exe()
         .unwrap()
         .with_file_name("clash-verge-service");
     let target_binary_path = "/Library/PrivilegedHelperTools/io.github.clashverge.helper";
     let target_binary_dir = Path::new("/Library/PrivilegedHelperTools");
+
     if !service_binary_path.exists() {
-        eprintln!("The clash-verge-service binary not found.");
-        std::process::exit(2);
-    }
-    if !target_binary_dir.exists() {
-        std::fs::create_dir("/Library/PrivilegedHelperTools")
-            .expect("Unable to create directory for service file");
+        return Err(anyhow::anyhow!("clash-verge-service binary not found"));
     }
 
-    std::fs::copy(service_binary_path, target_binary_path).expect("Unable to copy service file");
+    if !target_binary_dir.exists() {
+        std::fs::create_dir("/Library/PrivilegedHelperTools")
+            .map_err(|e| anyhow::anyhow!("Failed to create service file directory: {}", e))?;
+    }
+
+    std::fs::copy(&service_binary_path, &target_binary_path)
+        .map_err(|e| anyhow::anyhow!("Failed to copy service file: {}", e))?;
 
     let plist_dir = Path::new("/Library/LaunchDaemons");
     if !plist_dir.exists() {
-        std::fs::create_dir(plist_dir).expect("Unable to create directory for plist file");
+        std::fs::create_dir(plist_dir)
+            .map_err(|e| anyhow::anyhow!("Failed to create plist directory: {}", e))?;
     }
+
     let plist_file = "/Library/LaunchDaemons/io.github.clashverge.helper.plist";
     let plist_file = Path::new(plist_file);
 
     let plist_file_content = include_str!("files/io.github.clashverge.helper.plist");
-    let mut file = File::create(plist_file).expect("Failed to create file for writing.");
-    file.write_all(plist_file_content.as_bytes())
-        .expect("Unable to write plist file");
-    std::process::Command::new("chmod")
-        .arg("644")
-        .arg(plist_file)
-        .output()
-        .expect("Failed to chmod");
-    std::process::Command::new("chown")
-        .arg("root:wheel")
-        .arg(plist_file)
-        .output()
-        .expect("Failed to chown");
-    std::process::Command::new("chmod")
-        .arg("544")
-        .arg(target_binary_path)
-        .output()
-        .expect("Failed to chmod");
-    std::process::Command::new("chown")
-        .arg("root:wheel")
-        .arg(target_binary_path)
-        .output()
-        .expect("Failed to chown");
-    // Unload before load the service.
-    std::process::Command::new("launchctl")
-        .arg("bootout")
-        .arg("system")
-        .arg(plist_file)
-        .output()
-        .expect("Failed to unload service.");
-    // Load the service.
-    std::process::Command::new("launchctl")
-        .arg("bootstrap")
-        .arg("system")
-        .arg(plist_file)
-        .output()
-        .expect("Failed to load service.");
-    // Start the service.
-    std::process::Command::new("launchctl")
-        .arg("start")
-        .arg("io.github.clashverge.helper")
-        .output()
-        .expect("Failed to load service.");
+    File::create(plist_file)
+        .and_then(|mut file| file.write_all(plist_file_content.as_bytes()))
+        .map_err(|e| anyhow::anyhow!("Failed to write plist file: {}", e))?;
+
+    // Execute commands in sequence, stopping if any fails
+    let _ = run_command("chmod", &["644", plist_file.to_str().unwrap()], debug);
+    let _ = run_command(
+        "chown",
+        &["root:wheel", plist_file.to_str().unwrap()],
+        debug,
+    );
+    let _ = run_command("chmod", &["544", target_binary_path], debug);
+    let _ = run_command("chown", &["root:wheel", target_binary_path], debug);
+    let _ = run_command(
+        "launchctl",
+        &["enable", "system/io.github.clashverge.helper"],
+        debug,
+    );
+    let _ = run_command(
+        "launchctl",
+        &["bootout", "system", plist_file.to_str().unwrap()],
+        debug,
+    );
+    let _ = run_command(
+        "launchctl",
+        &["bootstrap", "system", plist_file.to_str().unwrap()],
+        debug,
+    );
+    let _ = run_command(
+        "launchctl",
+        &["start", "io.github.clashverge.helper"],
+        debug,
+    );
+
     Ok(())
 }
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Error> {
     const SERVICE_NAME: &str = "clash-verge-service";
+    use clash_verge_service::utils::run_command;
     use std::fs::File;
     use std::io::Write;
     use std::path::Path;
 
+    let debug = env::args().any(|arg| arg == "--debug");
+
     let service_binary_path = std::env::current_exe()
         .unwrap()
         .with_file_name("clash-verge-service");
+
     if !service_binary_path.exists() {
-        eprintln!("The clash-verge-service binary not found.");
-        std::process::exit(2);
+        return Err(anyhow::anyhow!("clash-verge-service binary not found"));
     }
 
-    // Peek the status of the service.
-    let status_code = std::process::Command::new("systemctl")
-        .arg("status")
-        .arg(format!("{}.service", SERVICE_NAME))
-        .arg("--no-pager")
+    // Check service status
+    let status_output = std::process::Command::new("systemctl")
+        .args(&["status", &format!("{}.service", SERVICE_NAME), "--no-pager"])
         .output()
-        .expect("Failed to execute 'systemctl status' command.")
-        .status
-        .code();
+        .map_err(|e| anyhow::anyhow!("Failed to check service status: {}", e))?;
 
-    /*
-     * https://www.freedesktop.org/software/systemd/man/latest/systemctl.html#Exit%20status
-     */
-    match status_code {
-        Some(code) => match code {
-            0 => return Ok(()),
-            1 | 2 | 3 => {
-                std::process::Command::new("systemctl")
-                    .arg("start")
-                    .arg(format!("{}.service", SERVICE_NAME))
-                    .output()
-                    .expect("Failed to execute 'systemctl start' command.");
-                return Ok(());
-            }
-            4 => {}
-            _ => {
-                panic!("Unexpected status code from systemctl status")
-            }
-        },
-        None => {
-            panic!("systemctl was improperly terminated.");
+    match status_output.status.code() {
+        Some(0) => return Ok(()), // Service is running
+        Some(1) | Some(2) | Some(3) => {
+            println!("Service exists but not running, attempting to start...");
+            run_command(
+                "systemctl",
+                &["start", &format!("{}.service", SERVICE_NAME)],
+                debug,
+            )?;
+            return Ok(());
         }
+        Some(4) => {} // Service not found, continue with installation
+        _ => return Err(anyhow::anyhow!("Unexpected systemctl status code")),
     }
 
+    // Create and write unit file
     let unit_file = format!("/etc/systemd/system/{}.service", SERVICE_NAME);
     let unit_file = Path::new(&unit_file);
 
@@ -136,22 +127,15 @@ fn main() -> Result<(), Error> {
         include_str!("files/systemd_service_unit.tmpl"),
         service_binary_path.to_str().unwrap()
     );
-    let mut file = File::create(unit_file).expect("Failed to create file for writing.");
-    file.write_all(unit_file_content.as_bytes())
-        .expect("Unable to write unit file");
 
-    // Reload unit files and start service.
-    std::process::Command::new("systemctl")
-        .arg("daemon-reload")
-        .output()
-        .and_then(|_| {
-            std::process::Command::new("systemctl")
-                .arg("enable")
-                .arg(SERVICE_NAME)
-                .arg("--now")
-                .output()
-        })
-        .expect("Failed to start service.");
+    File::create(unit_file)
+        .and_then(|mut file| file.write_all(unit_file_content.as_bytes()))
+        .map_err(|e| anyhow::anyhow!("Failed to write unit file: {}", e))?;
+
+    // Reload and start service
+    run_command("systemctl", &["daemon-reload"], debug);
+    run_command("systemctl", &["enable", SERVICE_NAME, "--now"], debug);
+
     Ok(())
 }
 
