@@ -16,7 +16,7 @@ fn main() -> Result<(), Error> {
 
     let debug = env::args().any(|arg| arg == "--debug");
 
-    let service_binary_path = std::env::current_exe()
+    let service_binary_path = env::current_exe()
         .unwrap()
         .with_file_name("clash-verge-service");
     let target_binary_path = "/Library/PrivilegedHelperTools/io.github.clashverge.helper";
@@ -90,7 +90,7 @@ fn main() -> Result<(), Error> {
 
     let debug = env::args().any(|arg| arg == "--debug");
 
-    let service_binary_path = std::env::current_exe()
+    let service_binary_path = env::current_exe()
         .unwrap()
         .with_file_name("clash-verge-service");
 
@@ -170,7 +170,7 @@ fn main() -> windows_service::Result<()> {
         }
     }
 
-    let service_binary_path = std::env::current_exe()
+    let service_binary_path = env::current_exe()
         .unwrap()
         .with_file_name("clash-verge-service.exe");
 
