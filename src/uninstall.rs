@@ -51,12 +51,12 @@ fn main() -> Result<(), Error> {
     let debug = env::args().any(|arg| arg == "--debug");
 
     // Stop and disable service
-    run_command(
+    let _ = run_command(
         "systemctl",
         &["stop", &format!("{}.service", SERVICE_NAME)],
         debug,
     );
-    run_command(
+    let _ = run_command(
         "systemctl",
         &["disable", &format!("{}.service", SERVICE_NAME)],
         debug,
@@ -70,7 +70,7 @@ fn main() -> Result<(), Error> {
     }
 
     // Reload systemd
-    run_command("systemctl", &["daemon-reload"], debug);
+    let _ = run_command("systemctl", &["daemon-reload"], debug);
 
     Ok(())
 }

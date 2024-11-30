@@ -107,8 +107,7 @@ fn main() -> Result<(), Error> {
     match status_output.status.code() {
         Some(0) => return Ok(()), // Service is running
         Some(1) | Some(2) | Some(3) => {
-            println!("Service exists but not running, attempting to start...");
-            run_command(
+            let _ = run_command(
                 "systemctl",
                 &["start", &format!("{}.service", SERVICE_NAME)],
                 debug,
@@ -133,8 +132,8 @@ fn main() -> Result<(), Error> {
         .map_err(|e| anyhow::anyhow!("Failed to write unit file: {}", e))?;
 
     // Reload and start service
-    run_command("systemctl", &["daemon-reload"], debug);
-    run_command("systemctl", &["enable", SERVICE_NAME, "--now"], debug);
+    let _ = run_command("systemctl", &["daemon-reload"], debug);
+    let _ = run_command("systemctl", &["enable", SERVICE_NAME, "--now"], debug);
 
     Ok(())
 }
