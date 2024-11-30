@@ -3,19 +3,15 @@ use anyhow::{bail, Context, Result};
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
 use std::collections::HashMap;
-use std::ffi::OsStr;
 use std::fs::File;
 use std::process::Command;
 use std::sync::Arc;
 use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System};
+
 #[derive(Debug, Default)]
 pub struct ClashStatus {
     pub info: Option<StartBody>,
-}
-#[allow(dead_code)]
-#[derive(Debug, Default)]
-pub struct DNSStatus {
-    pub dns: Option<String>,
+    pub process_id: Option<u32>,
 }
 
 impl ClashStatus {
@@ -42,9 +38,6 @@ pub fn get_version() -> Result<HashMap<String, String>> {
 /// POST /start_clash
 /// 启动clash进程
 pub fn start_clash(body: StartBody) -> Result<()> {
-    // stop the old clash bin
-    let _ = stop_clash();
-
     let body_cloned = body.clone();
 
     let config_dir = body.config_dir.as_str();
@@ -54,11 +47,14 @@ pub fn start_clash(body: StartBody) -> Result<()> {
     let args = vec!["-d", config_dir, "-f", config_file];
 
     let log = File::create(body.log_file).context("failed to open log")?;
-    Command::new(body.bin_path).args(args).stdout(log).spawn()?;
+    let child = Command::new(body.bin_path).args(args).stdout(log).spawn()?;
+
+    // 获取进程ID
+    let pid = child.id();
 
     let mut arc = ClashStatus::global().lock();
     arc.info = Some(body_cloned);
-
+    arc.process_id = Some(pid);
     Ok(())
 }
 
@@ -66,16 +62,34 @@ pub fn start_clash(body: StartBody) -> Result<()> {
 /// 停止clash进程
 pub fn stop_clash() -> Result<()> {
     let mut arc = ClashStatus::global().lock();
-
+    let pid = arc.process_id.take();
     arc.info = None;
 
     let mut system = System::new_with_specifics(
         RefreshKind::new().with_processes(ProcessRefreshKind::everything()),
     );
     system.refresh_processes(ProcessesToUpdate::All);
-    let procs = system.processes_by_name(OsStr::new("verge-mihomo"));
-    for proc in procs {
-        proc.kill();
+
+    if let Some(pid) = pid {
+        if let Some(process) = system.process(sysinfo::Pid::from_u32(pid)) {
+            process.kill_with(sysinfo::Signal::Term);
+
+            let mut attempts = 0;
+            while attempts < 5 {
+                std::thread::sleep(std::time::Duration::from_millis(100));
+
+                let mut new_system = sysinfo::System::new();
+                new_system.refresh_processes(ProcessesToUpdate::All);
+
+                let process_exists = new_system.process(sysinfo::Pid::from_u32(pid)).is_some();
+                if !process_exists {
+                    return Ok(());
+                }
+                attempts += 1;
+            }
+
+            process.kill();
+        }
     }
     Ok(())
 }
