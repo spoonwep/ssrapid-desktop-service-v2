@@ -7,6 +7,7 @@ fn main() {
 
 #[cfg(not(windows))]
 use anyhow::Error;
+
 #[cfg(target_os = "macos")]
 fn main() -> Result<(), Error> {
     use clash_verge_service::utils::run_command;
@@ -19,47 +20,75 @@ fn main() -> Result<(), Error> {
     let service_binary_path = env::current_exe()
         .unwrap()
         .with_file_name("clash-verge-service");
-    let target_binary_path = "/Library/PrivilegedHelperTools/io.github.clashvergerev.helper";
-    let target_binary_dir = Path::new("/Library/PrivilegedHelperTools");
 
     if !service_binary_path.exists() {
         return Err(anyhow::anyhow!("clash-verge-service binary not found"));
     }
 
-    if !target_binary_dir.exists() {
-        std::fs::create_dir("/Library/PrivilegedHelperTools")
-            .map_err(|e| anyhow::anyhow!("Failed to create service file directory: {}", e))?;
-    }
+    // 定义 bundle 路径
+    let bundle_path =
+        "/Library/PrivilegedHelperTools/io.github.clash-verge-rev.clash-verge-rev.service.bundle";
+    let contents_path = format!("{}/Contents", bundle_path);
+    let macos_path = format!("{}/MacOS", contents_path);
 
+    // 创建 bundle 目录结构
+    std::fs::create_dir_all(&macos_path)
+        .map_err(|e| anyhow::anyhow!("Failed to create bundle directories: {}", e))?;
+
+    // 复制二进制文件到 bundle 的 MacOS 目录
+    let target_binary_path = format!("{}/clash-verge-service", macos_path);
     std::fs::copy(&service_binary_path, &target_binary_path)
         .map_err(|e| anyhow::anyhow!("Failed to copy service file: {}", e))?;
 
+    // 创建并写入 Info.plist
+    let info_plist_path = format!("{}/Info.plist", contents_path);
+    let info_plist_content = include_str!("files/info.plist.tmpl");
+
+    std::fs::write(&info_plist_path, info_plist_content)
+        .map_err(|e| anyhow::anyhow!("Failed to write Info.plist: {}", e))?;
+
+    // 创建 LaunchDaemons 目录（如果不存在）
     let plist_dir = Path::new("/Library/LaunchDaemons");
     if !plist_dir.exists() {
         std::fs::create_dir(plist_dir)
             .map_err(|e| anyhow::anyhow!("Failed to create plist directory: {}", e))?;
     }
 
-    let plist_file = "/Library/LaunchDaemons/io.github.clashvergerev.helper.plist";
+    // 创建并写入 launchd plist
+    let plist_file =
+        "/Library/LaunchDaemons/io.github.clash-verge-rev.clash-verge-rev.service.plist";
     let plist_file = Path::new(plist_file);
 
-    let plist_file_content = include_str!("files/io.github.clashverge.helper.plist");
+    let launchd_plist_content = include_str!("files/launchd.plist.tmpl");
+
     File::create(plist_file)
-        .and_then(|mut file| file.write_all(plist_file_content.as_bytes()))
+        .and_then(|mut file| file.write_all(launchd_plist_content.as_bytes()))
         .map_err(|e| anyhow::anyhow!("Failed to write plist file: {}", e))?;
 
-    // Execute commands in sequence, stopping if any fails
+    // 设置权限
+    // 设置 LaunchDaemons plist 权限
     let _ = run_command("chmod", &["644", plist_file.to_str().unwrap()], debug);
     let _ = run_command(
         "chown",
         &["root:wheel", plist_file.to_str().unwrap()],
         debug,
     );
-    let _ = run_command("chmod", &["544", target_binary_path], debug);
-    let _ = run_command("chown", &["root:wheel", target_binary_path], debug);
+
+    // 设置二进制文件权限
+    let _ = run_command("chmod", &["544", &target_binary_path], debug);
+    let _ = run_command("chown", &["root:wheel", &target_binary_path], debug);
+
+    // 设置 bundle 目录及其内容的权限
+    let _ = run_command("chmod", &["755", bundle_path], debug);
+    let _ = run_command("chown", &["-R", "root:wheel", bundle_path], debug);
+
+    // 加载和启动服务
     let _ = run_command(
         "launchctl",
-        &["enable", "system/io.github.clashvergerev.helper"],
+        &[
+            "enable",
+            "system/io.github.clash-verge-rev.clash-verge-rev.service",
+        ],
         debug,
     );
     let _ = run_command(
@@ -74,12 +103,13 @@ fn main() -> Result<(), Error> {
     );
     let _ = run_command(
         "launchctl",
-        &["start", "io.github.clashvergerev.helper"],
+        &["start", "io.github.clash-verge-rev.clash-verge-rev.service"],
         debug,
     );
 
     Ok(())
 }
+
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Error> {
     const SERVICE_NAME: &str = "clash-verge-service";

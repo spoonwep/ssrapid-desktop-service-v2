@@ -14,33 +14,34 @@ fn main() -> Result<(), Error> {
     use std::env;
     use std::path::Path;
 
-    let target_binary_path = "/Library/PrivilegedHelperTools/io.github.clashvergerev.helper";
-    let plist_file = "/Library/LaunchDaemons/io.github.clashvergerev.helper.plist";
-
     let debug = env::args().any(|arg| arg == "--debug");
 
-    // Stop and unload service
+    // 定义路径
+    let bundle_path =
+        "/Library/PrivilegedHelperTools/io.github.clash-verge-rev.clash-verge-rev.service.bundle";
+    let plist_file =
+        "/Library/LaunchDaemons/io.github.clash-verge-rev.clash-verge-rev.service.plist";
+    let service_id = "io.github.clash-verge-rev.clash-verge-rev.service";
+
+    // 停止并卸载服务
+    let _ = run_command("launchctl", &["stop", service_id], debug);
     let _ = run_command(
         "launchctl",
-        &["stop", "io.github.clashvergerev.helper"],
+        &["disable", &format!("system/{}", service_id)],
         debug,
     );
     let _ = run_command("launchctl", &["bootout", "system", plist_file], debug);
-    let _ = run_command(
-        "launchctl",
-        &["disable", "system/io.github.clashvergerev.helper"],
-        debug,
-    )?;
 
-    // Remove files
+    // 删除文件
     if Path::new(plist_file).exists() {
         std::fs::remove_file(plist_file)
             .map_err(|e| anyhow::anyhow!("Failed to remove plist file: {}", e))?;
     }
 
-    if Path::new(target_binary_path).exists() {
-        std::fs::remove_file(target_binary_path)
-            .map_err(|e| anyhow::anyhow!("Failed to remove service binary: {}", e))?;
+    // 删除整个 bundle 目录
+    if Path::new(bundle_path).exists() {
+        std::fs::remove_dir_all(bundle_path)
+            .map_err(|e| anyhow::anyhow!("Failed to remove bundle directory: {}", e))?;
     }
 
     Ok(())
