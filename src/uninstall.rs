@@ -14,17 +14,21 @@ fn main() -> Result<(), Error> {
     use std::env;
     use std::path::Path;
 
-    let target_binary_path = "/Library/PrivilegedHelperTools/io.github.clashverge.helper";
-    let plist_file = "/Library/LaunchDaemons/io.github.clashverge.helper.plist";
+    let target_binary_path = "/Library/PrivilegedHelperTools/io.github.clashvergerev.helper";
+    let plist_file = "/Library/LaunchDaemons/io.github.clashvergerev.helper.plist";
 
     let debug = env::args().any(|arg| arg == "--debug");
 
     // Stop and unload service
-    let _ = run_command("launchctl", &["stop", "io.github.clashverge.helper"], debug);
+    let _ = run_command(
+        "launchctl",
+        &["stop", "io.github.clashvergerev.helper"],
+        debug,
+    );
     let _ = run_command("launchctl", &["bootout", "system", plist_file], debug);
     let _ = run_command(
         "launchctl",
-        &["disable", "system/io.github.clashverge.helper"],
+        &["disable", "system/io.github.clashvergerev.helper"],
         debug,
     )?;
 

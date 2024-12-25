@@ -19,7 +19,7 @@ fn main() -> Result<(), Error> {
     let service_binary_path = env::current_exe()
         .unwrap()
         .with_file_name("clash-verge-service");
-    let target_binary_path = "/Library/PrivilegedHelperTools/io.github.clashverge.helper";
+    let target_binary_path = "/Library/PrivilegedHelperTools/io.github.clashvergerev.helper";
     let target_binary_dir = Path::new("/Library/PrivilegedHelperTools");
 
     if !service_binary_path.exists() {
@@ -40,7 +40,7 @@ fn main() -> Result<(), Error> {
             .map_err(|e| anyhow::anyhow!("Failed to create plist directory: {}", e))?;
     }
 
-    let plist_file = "/Library/LaunchDaemons/io.github.clashverge.helper.plist";
+    let plist_file = "/Library/LaunchDaemons/io.github.clashvergerev.helper.plist";
     let plist_file = Path::new(plist_file);
 
     let plist_file_content = include_str!("files/io.github.clashverge.helper.plist");
@@ -59,7 +59,7 @@ fn main() -> Result<(), Error> {
     let _ = run_command("chown", &["root:wheel", target_binary_path], debug);
     let _ = run_command(
         "launchctl",
-        &["enable", "system/io.github.clashverge.helper"],
+        &["enable", "system/io.github.clashvergerev.helper"],
         debug,
     );
     let _ = run_command(
@@ -74,7 +74,7 @@ fn main() -> Result<(), Error> {
     );
     let _ = run_command(
         "launchctl",
-        &["start", "io.github.clashverge.helper"],
+        &["start", "io.github.clashvergerev.helper"],
         debug,
     );
 
