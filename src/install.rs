@@ -10,12 +10,13 @@ use anyhow::Error;
 
 #[cfg(target_os = "macos")]
 fn main() -> Result<(), Error> {
-    use clash_verge_service::utils::run_command;
+    use clash_verge_service::utils::{run_command, uninstall_old_service};
     use std::fs::File;
     use std::io::Write;
     use std::path::Path;
 
     let debug = env::args().any(|arg| arg == "--debug");
+    let _ = uninstall_old_service();
 
     let service_binary_path = env::current_exe()
         .unwrap()

@@ -10,12 +10,13 @@ use anyhow::Error;
 
 #[cfg(target_os = "macos")]
 fn main() -> Result<(), Error> {
-    use clash_verge_service::utils::run_command;
+    use clash_verge_service::utils::{run_command, uninstall_old_service};
     use std::env;
     use std::path::Path;
 
     let debug = env::args().any(|arg| arg == "--debug");
 
+    let _ = uninstall_old_service();
     // 定义路径
     let bundle_path =
         "/Library/PrivilegedHelperTools/io.github.clash-verge-rev.clash-verge-rev.service.bundle";

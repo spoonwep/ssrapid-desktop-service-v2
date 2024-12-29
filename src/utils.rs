@@ -56,3 +56,33 @@ pub fn run_command(cmd: &str, args: &[&str], debug: bool) -> Result<(), Error> {
 
     Ok(())
 }
+
+#[cfg(target_os = "macos")]
+pub fn uninstall_old_service() -> Result<(), Error> {
+    use std::path::Path;
+
+    let target_binary_path = "/Library/PrivilegedHelperTools/io.github.clashverge.helper";
+    let plist_file = "/Library/LaunchDaemons/io.github.clashverge.helper.plist";
+
+    // Stop and unload service
+    let _ = run_command("launchctl", &["stop", "io.github.clashverge.helper"], false);
+    let _ = run_command("launchctl", &["bootout", "system", plist_file], false);
+    let _ = run_command(
+        "launchctl",
+        &["disable", "system/io.github.clashverge.helper"],
+        false,
+    )?;
+
+    // Remove files
+    if Path::new(plist_file).exists() {
+        std::fs::remove_file(plist_file)
+            .map_err(|e| anyhow::anyhow!("Failed to remove plist file: {}", e))?;
+    }
+
+    if Path::new(target_binary_path).exists() {
+        std::fs::remove_file(target_binary_path)
+            .map_err(|e| anyhow::anyhow!("Failed to remove service binary: {}", e))?;
+    }
+
+    Ok(())
+}
