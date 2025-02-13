@@ -18,9 +18,12 @@ use windows_service::{
     service_control_handler::{self, ServiceControlHandlerResult},
     service_dispatcher, Result,
 };
+#[cfg(target_os = "macos")]
+use clash_verge_service::utils;
 
 #[cfg(windows)]
 const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
+#[cfg(not(target_os = "macos"))]
 const SERVICE_NAME: &str = "clash_verge_service";
 const LISTEN_PORT: u16 = 33211;
 
@@ -101,7 +104,7 @@ pub async fn run_service() -> anyhow::Result<()> {
 }
 
 // 停止服务
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 fn stop_service() -> Result<()> {
     let status_handle =
         service_control_handler::register(SERVICE_NAME, |_| ServiceControlHandlerResult::NoError)?;
@@ -118,7 +121,7 @@ fn stop_service() -> Result<()> {
 
     Ok(())
 }
-#[cfg(not(windows))]
+#[cfg(target_os = "linux")]
 fn stop_service() -> anyhow::Result<()> {
     // systemctl stop clash_verge_service
     std::process::Command::new("systemctl")
@@ -128,6 +131,22 @@ fn stop_service() -> anyhow::Result<()> {
         .expect("failed to execute process");
     Ok(())
 }
+
+#[cfg(target_os = "macos")]
+fn stop_service() -> anyhow::Result<()> {
+    // launchctl stop clash_verge_service
+    let _ = utils::run_command(
+        "launchctl",
+        &[
+            "stop",
+            "io.github.clash-verge-rev.clash-verge-rev.service"
+        ],
+        true
+    );
+
+    Ok(())
+}
+
 /// Service Main function
 #[cfg(windows)]
 pub fn main() -> Result<()> {
