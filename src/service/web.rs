@@ -39,6 +39,20 @@ pub fn get_version() -> Result<HashMap<String, String>> {
 /// POST /start_clash
 /// 启动clash进程
 pub fn start_clash(body: StartBody) -> Result<()> {
+    // 先检查是否已有进程在运行
+    let mut status = ClashStatus::global().lock();
+    if status.is_running.load(Ordering::SeqCst) {
+        // 如果有进程在运行，先尝试停止它
+        if let Some(old_pid) = status.process_id {
+            drop(status); // 释放锁，避免死锁
+            log::warn!("Found existing process {}, attempting to stop it first", old_pid);
+            let _ = stop_clash();
+            // 等待一段时间确保进程完全终止
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            status = ClashStatus::global().lock();
+        }
+    }
+
     let body_cloned = body.clone();
     let config_dir = body.config_dir.as_str();
     let config_file = body.config_file.as_str();
@@ -55,17 +69,16 @@ pub fn start_clash(body: StartBody) -> Result<()> {
                 .args(&args)
                 .stdout(log)
                 .pre_exec(|| {
-                    // 设置新的进程组
                     libc::setpgid(0, 0);
                     Ok(())
                 })
                 .spawn()?;
 
             let pid = child.id();
-            let mut arc = ClashStatus::global().lock();
-            arc.info = Some(body_cloned);
-            arc.process_id = Some(pid);
-            arc.is_running.store(true, Ordering::SeqCst);
+            status.info = Some(body_cloned);
+            status.process_id = Some(pid);
+            status.is_running.store(true, Ordering::SeqCst);
+            log::info!("Started new process with PID {}", pid);
         }
     }
 
@@ -77,10 +90,10 @@ pub fn start_clash(body: StartBody) -> Result<()> {
             .spawn()?;
 
         let pid = child.id();
-        let mut arc = ClashStatus::global().lock();
-        arc.info = Some(body_cloned);
-        arc.process_id = Some(pid);
-        arc.is_running.store(true, Ordering::SeqCst);
+        status.info = Some(body_cloned);
+        status.process_id = Some(pid);
+        status.is_running.store(true, Ordering::SeqCst);
+        log::info!("Started new process with PID {}", pid);
     }
 
     Ok(())
@@ -89,51 +102,65 @@ pub fn start_clash(body: StartBody) -> Result<()> {
 /// POST /stop_clash
 /// 停止clash进程
 pub fn stop_clash() -> Result<()> {
-    let mut arc = ClashStatus::global().lock();
-    let pid = arc.process_id.take();
-    arc.info = None;
+    let mut status = ClashStatus::global().lock();
+    
+    if !status.is_running.load(Ordering::SeqCst) {
+        log::info!("No running process found");
+        return Ok(());
+    }
 
-    #[cfg(target_os = "linux")]
-    if let Some(pid) = pid {
+    if let Some(pid) = status.process_id.take() {
+        log::info!("Stopping process {}", pid);
+        
+        #[cfg(target_os = "linux")]
         unsafe {
             // 1. 发送 SIGTERM
-            libc::kill(pid as i32, libc::SIGTERM);
-
-            // 2. 等待进程退出（最多1秒）
-            let mut attempts = 0;
-            while attempts < 10 {
-                match libc::kill(pid as i32, 0) {
-                    0 => {
-                        // 进程还在运行
-                        std::thread::sleep(std::time::Duration::from_millis(100));
-                        attempts += 1;
-                    }
-                    _ => {
-                        // 进程已经退出
-                        return Ok(());
+            if libc::kill(pid as i32, libc::SIGTERM) == 0 {
+                // 2. 等待进程退出（最多1秒）
+                let mut attempts = 0;
+                while attempts < 10 {
+                    match libc::kill(pid as i32, 0) {
+                        0 => {
+                            std::thread::sleep(std::time::Duration::from_millis(100));
+                            attempts += 1;
+                        }
+                        _ => {
+                            log::info!("Process {} terminated successfully", pid);
+                            break;
+                        }
                     }
                 }
+
+                // 3. 如果还没退出，发送 SIGKILL
+                if attempts >= 10 {
+                    log::warn!("Process {} did not respond to SIGTERM, sending SIGKILL", pid);
+                    libc::kill(pid as i32, libc::SIGKILL);
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                }
             }
+        }
 
-            // 3. 如果还没退出，发送 SIGKILL
-            libc::kill(pid as i32, libc::SIGKILL);
-            // 等待一小段时间确保进程被终止
-            std::thread::sleep(std::time::Duration::from_millis(100));
+        #[cfg(not(target_os = "linux"))]
+        {
+            use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System};
+            let mut system = System::new_with_specifics(
+                RefreshKind::new().with_processes(ProcessRefreshKind::everything()),
+            );
+            system.refresh_processes(ProcessesToUpdate::All);
+
+            if let Some(process) = system.process(sysinfo::Pid::from_u32(pid)) {
+                process.kill();
+                log::info!("Sent kill signal to process {}", pid);
+                // 等待进程退出
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
         }
     }
 
-    #[cfg(not(target_os = "linux"))]
-    if let Some(pid) = pid {
-        use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System};
-        let mut system = System::new_with_specifics(
-            RefreshKind::new().with_processes(ProcessRefreshKind::everything()),
-        );
-        system.refresh_processes(ProcessesToUpdate::All);
-
-        if let Some(process) = system.process(sysinfo::Pid::from_u32(pid)) {
-            process.kill();
-        }
-    }
+    // 清理状态
+    status.info = None;
+    status.is_running.store(false, Ordering::SeqCst);
+    log::info!("Process status cleared");
 
     Ok(())
 }
