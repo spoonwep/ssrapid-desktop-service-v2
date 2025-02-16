@@ -129,11 +129,9 @@ impl CoreManager {
             let current_pid = std::process::id() as i32;
 
             if is_running_clash && clash_running_pid == current_pid {
-                println!("Clash is already running with the same PID");
-            } else if is_running_clash && clash_running_pid > 0 {
-                println!("Clash is running with a different PID, stopping it first");
-                self.stop_clash()?;
-            } else if !is_running_clash && clash_running_pid < 1 {
+                println!("Clash is already running with pid: {}", current_pid);
+            }
+            if !is_running_clash && clash_running_pid <= 0 {
                 let current_pid = std::process::id() as i32;
                 println!("Clash is start running with pid: {}", current_pid);
                 self.clash_status.inner.lock().unwrap().running_pid.store(current_pid, Ordering::Relaxed);

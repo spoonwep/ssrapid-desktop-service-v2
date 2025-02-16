@@ -78,14 +78,6 @@ pub async fn run_service() -> anyhow::Result<()> {
         .and(warp::path("is_healthy"))
         .map(move || wrap_response!(COREMANAGER.lock().unwrap().is_healthy()));
 
-    let api_stop_mihomo = warp::post()
-        .and(warp::path("stop_mihomo"))
-        .map(move || wrap_response!(COREMANAGER.lock().unwrap().stop_mihomo()));
-
-    let api_start_mihomo = warp::post()
-        .and(warp::path("start_mihomo"))
-        .map(move || wrap_response!(COREMANAGER.lock().unwrap().start_mihomo()));
-
     let api_start_clash = warp::post()
         .and(warp::path("start_clash"))
         .and(warp::body::json())
@@ -93,7 +85,7 @@ pub async fn run_service() -> anyhow::Result<()> {
 
     let api_stop_clash = warp::post()
         .and(warp::path("stop_clash"))
-        .map(move || wrap_response!(COREMANAGER.lock().unwrap().stop_clash()));
+        .map(move || wrap_response!(COREMANAGER.lock().unwrap().stop_mihomo()));
 
     let api_get_clash = warp::get()
         .and(warp::path("get_clash"))
@@ -103,6 +95,10 @@ pub async fn run_service() -> anyhow::Result<()> {
         .and(warp::path("stop_service"))
         .map(|| wrap_response!(stop_service()));
 
+    let api_exit_sys = warp::post()
+        .and(warp::path("exit_sys"))
+        .map(move || wrap_response!(COREMANAGER.lock().unwrap().stop_clash()));
+
     warp::serve(
         api_get_version
             .or(api_is_healthy)
@@ -110,8 +106,7 @@ pub async fn run_service() -> anyhow::Result<()> {
             .or(api_stop_clash)
             .or(api_stop_service)
             .or(api_get_clash)
-            .or(api_start_mihomo)
-            .or(api_stop_mihomo),
+            .or(api_exit_sys)
     )
     .run(([127, 0, 0, 1], LISTEN_PORT))
     .await;
