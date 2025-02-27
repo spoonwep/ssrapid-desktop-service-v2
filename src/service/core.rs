@@ -17,21 +17,6 @@ impl CoreManager {
         }
     }
 
-    pub fn is_healthy(&self) -> Result<bool> {
-        let is_running_clash = self.clash_status.inner.lock().unwrap().is_running.load(Ordering::Relaxed);
-        let clash_running_pid = self.clash_status.inner.lock().unwrap().running_pid.load(Ordering::Relaxed);
-        let is_running_mihomo = self.mihomo_status.inner.lock().unwrap().is_running.load(Ordering::Relaxed);
-        let mihomo_running_pid = self.mihomo_status.inner.lock().unwrap().running_pid.load(Ordering::Relaxed);
-        println!(
-            "Clash running: {}, clash PID: {}, mihomo running: {}, mihomo PID: {}",
-            is_running_clash, clash_running_pid, is_running_mihomo, mihomo_running_pid
-        );
-        Ok(is_running_clash
-            && clash_running_pid > 0
-            && is_running_mihomo
-            && mihomo_running_pid > 0)
-    }
-
     pub fn get_version(&self) -> Result<HashMap<String, String>> {
         let current_pid = std::process::id() as i32;
         println!("Current PID: {}", current_pid);

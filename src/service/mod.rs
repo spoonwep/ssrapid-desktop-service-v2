@@ -74,10 +74,6 @@ pub async fn run_service() -> anyhow::Result<()> {
         .and(warp::path("version"))
         .map(move || wrap_response!(COREMANAGER.lock().unwrap().get_version()));
 
-    let api_is_healthy = warp::get()
-        .and(warp::path("is_healthy"))
-        .map(move || wrap_response!(COREMANAGER.lock().unwrap().is_healthy()));
-
     let api_start_clash = warp::post()
         .and(warp::path("start_clash"))
         .and(warp::body::json())
@@ -101,7 +97,6 @@ pub async fn run_service() -> anyhow::Result<()> {
 
     warp::serve(
         api_get_version
-            .or(api_is_healthy)
             .or(api_start_clash)
             .or(api_stop_clash)
             .or(api_stop_service)
