@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::sync::{
-        atomic::{AtomicBool, AtomicI32},
-        Arc, Mutex,
-    };
+    atomic::{AtomicBool, AtomicI32},
+    Arc, Mutex,
+};
 
 #[derive(Default, Debug, Deserialize, Serialize, Clone)]
 pub struct StartBody {

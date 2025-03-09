@@ -139,7 +139,7 @@ dependencies = [
 
 [[package]]
 name = "clash-verge-service"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "interfaces",

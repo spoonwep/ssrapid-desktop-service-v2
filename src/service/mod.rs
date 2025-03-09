@@ -101,7 +101,7 @@ pub async fn run_service() -> anyhow::Result<()> {
             .or(api_stop_clash)
             .or(api_stop_service)
             .or(api_get_clash)
-            .or(api_exit_sys)
+            .or(api_exit_sys),
     )
     .run(([127, 0, 0, 1], LISTEN_PORT))
     .await;
