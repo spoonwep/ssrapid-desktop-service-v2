@@ -10,7 +10,7 @@ use anyhow::Error;
 
 #[cfg(target_os = "macos")]
 fn main() -> Result<(), Error> {
-    use clash_verge_service::utils::{run_command, uninstall_old_service};
+    use ssrapid_desktop_service::utils::{run_command, uninstall_old_service};
     use std::env;
     use std::path::Path;
 
@@ -50,7 +50,7 @@ fn main() -> Result<(), Error> {
 
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Error> {
-    use clash_verge_service::utils::run_command;
+    use ssrapid_desktop_service::utils::run_command;
     const SERVICE_NAME: &str = "ssrapid-desktop-service";
     use std::env;
 

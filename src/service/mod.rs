@@ -7,7 +7,7 @@ use tokio::runtime::Runtime;
 use warp::Filter;
 
 #[cfg(target_os = "macos")]
-use clash_verge_service::utils;
+use ssrapid_desktop_service::utils;
 use core::COREMANAGER;
 #[cfg(windows)]
 use std::{ffi::OsString, time::Duration};
