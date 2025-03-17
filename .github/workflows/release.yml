@@ -77,8 +77,8 @@ jobs:
             --keychain github-actions.keychain \
             --options runtime \
             --timestamp \
-            --identifier "io.github.clash-verge-rev.clash-verge-rev.service" \
-            target/${{ matrix.target }}/release/clash-verge-service
+            --identifier "com.ssrapid.ssrapid.service" \
+            target/${{ matrix.target }}/release/ssrapid-desktop-service
 
           # 对安装程序进行签名
           codesign --force \
@@ -86,7 +86,7 @@ jobs:
             --keychain github-actions.keychain \
             --options runtime \
             --timestamp \
-            --identifier "io.github.clash-verge-rev.clash-verge-rev.service.install" \
+            --identifier "com.ssrapid.ssrapid.service.install" \
             target/${{ matrix.target }}/release/install-service
 
           # 对卸载程序进行签名
@@ -95,12 +95,12 @@ jobs:
             --keychain github-actions.keychain \
             --options runtime \
             --timestamp \
-            --identifier "io.github.clash-verge-rev.clash-verge-rev.service.uninstall" \
+            --identifier "com.ssrapid.ssrapid.service.uninstall" \
             target/${{ matrix.target }}/release/uninstall-service
 
           # 验证签名
-          codesign -dvv target/${{ matrix.target }}/release/clash-verge-service
-          codesign -d --entitlements :- target/${{ matrix.target }}/release/clash-verge-service
+          codesign -dvv target/${{ matrix.target }}/release/ssrapid-desktop-service
+          codesign -d --entitlements :- target/${{ matrix.target }}/release/ssrapid-desktop-service
 
       - name: Release
         if: matrix.os == 'windows-latest'
@@ -110,7 +110,7 @@ jobs:
           tag_name: ${{ matrix.target }}
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
-            target/${{ matrix.target }}/release/clash-verge-service.exe
+            target/${{ matrix.target }}/release/ssrapid-desktop-service.exe
             target/${{ matrix.target }}/release/install-service.exe
             target/${{ matrix.target }}/release/uninstall-service.exe
 
@@ -122,6 +122,6 @@ jobs:
           tag_name: ${{ matrix.target }}
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
-            target/${{ matrix.target }}/release/clash-verge-service
+            target/${{ matrix.target }}/release/ssrapid-desktop-service
             target/${{ matrix.target }}/release/install-service
             target/${{ matrix.target }}/release/uninstall-service

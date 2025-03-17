@@ -25,7 +25,7 @@ use windows_service::{
 #[cfg(windows)]
 const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
 #[cfg(not(target_os = "macos"))]
-const SERVICE_NAME: &str = "clash_verge_service";
+const SERVICE_NAME: &str = "ssrapid_desktop_service";
 const LISTEN_PORT: u16 = 33211;
 
 macro_rules! wrap_response {
@@ -129,7 +129,7 @@ fn stop_service() -> Result<()> {
 }
 #[cfg(target_os = "linux")]
 fn stop_service() -> anyhow::Result<()> {
-    // systemctl stop clash_verge_service
+    // systemctl stop ssrapid_desktop_service
     std::process::Command::new("systemctl")
         .arg("stop")
         .arg(SERVICE_NAME)
@@ -140,10 +140,10 @@ fn stop_service() -> anyhow::Result<()> {
 
 #[cfg(target_os = "macos")]
 fn stop_service() -> anyhow::Result<()> {
-    // launchctl stop clash_verge_service
+    // launchctl stop com.ssrapid.ssrapid.service
     let _ = utils::run_command(
         "launchctl",
-        &["stop", "io.github.clash-verge-rev.clash-verge-rev.service"],
+        &["stop", "com.ssrapid.ssrapid.service"],
         true,
     );
 

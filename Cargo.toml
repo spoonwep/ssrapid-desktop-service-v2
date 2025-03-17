@@ -1,13 +1,13 @@
 [package]
-name = "clash-verge-service"
-version = "1.0.2"
+name = "ssrapid-desktop-service"
+version = "1.0.0"
 edition = "2021"
-authors = ["zzzgydi", "Clash Verge Rev Team"]
+authors = ["ssrapid"]
 license = "GPL-3.0"
-repository = "https://github.com/zzzgydi/clash-verge-service.git"
+repository = ""
 
 [[bin]]
-name = "clash-verge-service"
+name = "ssrapid-desktop-service"
 path = "src/main.rs"
 
 [[bin]]

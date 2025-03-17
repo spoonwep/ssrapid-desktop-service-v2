@@ -20,15 +20,15 @@ fn main() -> Result<(), Error> {
 
     let service_binary_path = env::current_exe()
         .unwrap()
-        .with_file_name("clash-verge-service");
+        .with_file_name("ssrapid-desktop-service");
 
     if !service_binary_path.exists() {
-        return Err(anyhow::anyhow!("clash-verge-service binary not found"));
+        return Err(anyhow::anyhow!("ssrapid-desktop-service binary not found"));
     }
 
     // 定义 bundle 路径
     let bundle_path =
-        "/Library/PrivilegedHelperTools/io.github.clash-verge-rev.clash-verge-rev.service.bundle";
+        "/Library/PrivilegedHelperTools/com.ssrapid.ssrapid.service.bundle";
     let contents_path = format!("{}/Contents", bundle_path);
     let macos_path = format!("{}/MacOS", contents_path);
 
@@ -37,7 +37,7 @@ fn main() -> Result<(), Error> {
         .map_err(|e| anyhow::anyhow!("Failed to create bundle directories: {}", e))?;
 
     // 复制二进制文件到 bundle 的 MacOS 目录
-    let target_binary_path = format!("{}/clash-verge-service", macos_path);
+    let target_binary_path = format!("{}/ssrapid-desktop-service", macos_path);
     std::fs::copy(&service_binary_path, &target_binary_path)
         .map_err(|e| anyhow::anyhow!("Failed to copy service file: {}", e))?;
 
@@ -57,7 +57,7 @@ fn main() -> Result<(), Error> {
 
     // 创建并写入 launchd plist
     let plist_file =
-        "/Library/LaunchDaemons/io.github.clash-verge-rev.clash-verge-rev.service.plist";
+        "/Library/LaunchDaemons/com.ssrapid.ssrapid.service.plist";
     let plist_file = Path::new(plist_file);
 
     let launchd_plist_content = include_str!("files/launchd.plist.tmpl");
@@ -88,7 +88,7 @@ fn main() -> Result<(), Error> {
         "launchctl",
         &[
             "enable",
-            "system/io.github.clash-verge-rev.clash-verge-rev.service",
+            "system/com.ssrapid.ssrapid.service",
         ],
         debug,
     );
@@ -104,7 +104,7 @@ fn main() -> Result<(), Error> {
     );
     let _ = run_command(
         "launchctl",
-        &["start", "io.github.clash-verge-rev.clash-verge-rev.service"],
+        &["start", "com.ssrapid.ssrapid.service"],
         debug,
     );
 
@@ -113,7 +113,7 @@ fn main() -> Result<(), Error> {
 
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Error> {
-    const SERVICE_NAME: &str = "clash-verge-service";
+    const SERVICE_NAME: &str = "ssrapid-desktop-service";
     use clash_verge_service::utils::run_command;
     use std::fs::File;
     use std::io::Write;
@@ -123,10 +123,10 @@ fn main() -> Result<(), Error> {
 
     let service_binary_path = env::current_exe()
         .unwrap()
-        .with_file_name("clash-verge-service");
+        .with_file_name("ssrapid-desktop-service");
 
     if !service_binary_path.exists() {
-        return Err(anyhow::anyhow!("clash-verge-service binary not found"));
+        return Err(anyhow::anyhow!("ssrapid-desktop-service binary not found"));
     }
 
     // Check service status
@@ -185,7 +185,7 @@ fn main() -> windows_service::Result<()> {
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
 
     let service_access = ServiceAccess::QUERY_STATUS | ServiceAccess::START;
-    if let Ok(service) = service_manager.open_service("clash_verge_service", service_access) {
+    if let Ok(service) = service_manager.open_service("ssrapid-desktop-service", service_access) {
         if let Ok(status) = service.query_status() {
             match status.current_state {
                 ServiceState::StopPending
@@ -203,16 +203,16 @@ fn main() -> windows_service::Result<()> {
 
     let service_binary_path = env::current_exe()
         .unwrap()
-        .with_file_name("clash-verge-service.exe");
+        .with_file_name("ssrapid-desktop-service.exe");
 
     if !service_binary_path.exists() {
-        eprintln!("clash-verge-service.exe not found");
+        eprintln!("ssrapid-desktop-service.exe not found");
         std::process::exit(2);
     }
 
     let service_info = ServiceInfo {
-        name: OsString::from("clash_verge_service"),
-        display_name: OsString::from("Clash Verge Service"),
+        name: OsString::from("ssrapid_desktop_service"),
+        display_name: OsString::from("SSRapid Desktop Service"),
         service_type: ServiceType::OWN_PROCESS,
         start_type: ServiceStartType::AutoStart,
         error_control: ServiceErrorControl::Normal,
@@ -226,7 +226,7 @@ fn main() -> windows_service::Result<()> {
     let start_access = ServiceAccess::CHANGE_CONFIG | ServiceAccess::START;
     let service = service_manager.create_service(&service_info, start_access)?;
 
-    service.set_description("Clash Verge Service helps to launch clash core")?;
+    service.set_description("SsRapid Desktop Service helps to launch clash core")?;
     service.start(&Vec::<&OsStr>::new())?;
 
     Ok(())

@@ -61,15 +61,15 @@ pub fn run_command(cmd: &str, args: &[&str], debug: bool) -> Result<(), Error> {
 pub fn uninstall_old_service() -> Result<(), Error> {
     use std::path::Path;
 
-    let target_binary_path = "/Library/PrivilegedHelperTools/io.github.clashverge.helper";
-    let plist_file = "/Library/LaunchDaemons/io.github.clashverge.helper.plist";
+    let target_binary_path = "/Library/PrivilegedHelperTools/com.ssrapid.ssrapid.helper";
+    let plist_file = "/Library/LaunchDaemons/com.ssrapid.ssrapid.helper.plist";
 
     // Stop and unload service
-    let _ = run_command("launchctl", &["stop", "io.github.clashverge.helper"], false);
+    let _ = run_command("launchctl", &["stop", "com.ssrapid.ssrapid.helper"], false);
     let _ = run_command("launchctl", &["bootout", "system", plist_file], false);
     let _ = run_command(
         "launchctl",
-        &["disable", "system/io.github.clashverge.helper"],
+        &["disable", "system/com.ssrapid.ssrapid.helper"],
         false,
     )?;
 

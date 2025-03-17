@@ -74,7 +74,7 @@ impl CoreManager {
         let current_pid = std::process::id() as i32;
         println!("Current PID: {}", current_pid);
         Ok(HashMap::from([
-            ("service".into(), "Clash Verge Service".into()),
+            ("service".into(), "SsRapid Desktop Service".into()),
             ("version".into(), env!("CARGO_PKG_VERSION").into()),
         ]))
     }
