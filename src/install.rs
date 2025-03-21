@@ -226,7 +226,7 @@ fn main() -> windows_service::Result<()> {
     let start_access = ServiceAccess::CHANGE_CONFIG | ServiceAccess::START;
     let service = service_manager.create_service(&service_info, start_access)?;
 
-    service.set_description("SsRapid Desktop Service helps to launch clash core")?;
+    service.set_description("Ssrapid Desktop Service helps to launch clash core")?;
     service.start(&Vec::<&OsStr>::new())?;
 
     Ok(())

@@ -59,7 +59,19 @@ jobs:
           tag_name: ${{ matrix.target }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
+      - name: Release
+        if: matrix.os == 'windows-latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ matrix.target }}
+          tag_name: ${{ matrix.target }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            target/${{ matrix.target }}/release/ssrapid-desktop-service.exe
+            target/${{ matrix.target }}/release/install-service.exe
+            target/${{ matrix.target }}/release/uninstall-service.exe
+
       - name: Release
         if: matrix.os != 'windows-latest'
         uses: softprops/action-gh-release@v2
